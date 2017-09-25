@@ -6,15 +6,19 @@
 #include <omp.h>
 #endif
 
-void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile,
+void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile, TStr& OutWalkFile,
  int& Dimensions, int& WalkLen, int& NumWalks, int& WinSize, int& Iter,
- bool& Verbose, double& ParamP, double& ParamQ, bool& Directed, bool& Weighted) {
+ bool& Verbose, double& ParamP, double& ParamQ,
+ // bool& NotToLearnEmbeddings,
+ bool& Directed, bool& Weighted) {
   Env = TEnv(argc, argv, TNotify::StdNotify);
   Env.PrepArgs(TStr::Fmt("\nAn algorithmic framework for representational learning on graphs."));
   InFile = Env.GetIfArgPrefixStr("-i:", "graph/karate.edgelist",
    "Input graph path");
   OutFile = Env.GetIfArgPrefixStr("-o:", "emb/karate.emb",
    "Output graph path");
+  OutWalkFile = Env.GetIfArgPrefixStr("-ow:", "emb/karate.walk",
+   "Output walks path");
   Dimensions = Env.GetIfArgPrefixInt("-d:", 128,
    "Number of dimensions. Default is 128");
   WalkLen = Env.GetIfArgPrefixInt("-l:", 80,
@@ -30,6 +34,7 @@ void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile,
   ParamQ = Env.GetIfArgPrefixFlt("-q:", 1,
    "Inout hyperparameter. Default is 1");
   Verbose = Env.IsArgStr("-v", "Verbose output.");
+  // NotToLearnEmbeddings = Env.IsArgStr("-nole", "Do not learn the embeddings.");
   Directed = Env.IsArgStr("-dr", "Graph is directed.");
   Weighted = Env.IsArgStr("-w", "Graph is weighted.");
 }
@@ -86,17 +91,18 @@ void WriteOutput(TStr& OutFile, TIntFltVH& EmbeddingsHV) {
 }
 
 int main(int argc, char* argv[]) {
-  TStr InFile,OutFile;
+  TStr InFile, OutFile, OutWalkFile;
   int Dimensions, WalkLen, NumWalks, WinSize, Iter;
   double ParamP, ParamQ;
+  // bool NotToLearnEmbeddings;
   bool Directed, Weighted, Verbose;
-  ParseArgs(argc, argv, InFile, OutFile, Dimensions, WalkLen, NumWalks, WinSize,
+  ParseArgs(argc, argv, InFile, OutFile, OutWalkFile, Dimensions, WalkLen, NumWalks, WinSize,
    Iter, Verbose, ParamP, ParamQ, Directed, Weighted);
   PWNet InNet = PWNet::New();
   TIntFltVH EmbeddingsHV;
   ReadGraph(InFile, Directed, Weighted, Verbose, InNet);
   node2vec(InNet, ParamP, ParamQ, Dimensions, WalkLen, NumWalks, WinSize, Iter, 
-   Verbose, EmbeddingsHV);
+   Verbose, EmbeddingsHV, OutWalkFile);
   WriteOutput(OutFile, EmbeddingsHV);
   return 0;
 }
