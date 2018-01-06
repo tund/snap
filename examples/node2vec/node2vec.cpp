@@ -6,7 +6,7 @@
 #include <omp.h>
 #endif
 
-void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile, TStr& OutWalkFile,
+void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile, bool& OutWalks,
  int& Dimensions, int& WalkLen, int& NumWalks, int& WinSize, int& Iter,
  bool& Verbose, double& ParamP, double& ParamQ, bool& Directed, bool& Weighted) {
   Env = TEnv(argc, argv, TNotify::StdNotify);
@@ -15,8 +15,6 @@ void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile, TStr& OutWa
    "Input graph path");
   OutFile = Env.GetIfArgPrefixStr("-o:", "emb/karate.emb",
    "Output graph path");
-  OutWalkFile = Env.GetIfArgPrefixStr("-ow:", "walks/karate.walks",
-   "Output walks path");
   Dimensions = Env.GetIfArgPrefixInt("-d:", 128,
    "Number of dimensions. Default is 128");
   WalkLen = Env.GetIfArgPrefixInt("-l:", 80,
@@ -34,6 +32,7 @@ void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile, TStr& OutWa
   Verbose = Env.IsArgStr("-v", "Verbose output.");
   Directed = Env.IsArgStr("-dr", "Graph is directed.");
   Weighted = Env.IsArgStr("-w", "Graph is weighted.");
+  OutWalks = Env.IsArgStr("-ow", "Output random walks instead of embeddings.");
 }
 
 void ReadGraph(TStr& InFile, bool& Directed, bool& Weighted, bool& Verbose, PWNet& InNet) {
@@ -67,38 +66,49 @@ void ReadGraph(TStr& InFile, bool& Directed, bool& Weighted, bool& Verbose, PWNe
   }
 }
 
-void WriteOutput(TStr& OutFile, TIntFltVH& EmbeddingsHV) {
+void WriteOutput(TStr& OutFile, TIntFltVH& EmbeddingsHV, TVVec<TInt, int64>& WalksVV, bool& OutWalks) {
   TFOut FOut(OutFile);
-  bool First = 1;
-  for (int i = EmbeddingsHV.FFirstKeyId(); EmbeddingsHV.FNextKeyId(i);) {
-    if (First) {
-      FOut.PutInt(EmbeddingsHV.Len());
-      FOut.PutCh(' ');
-      FOut.PutInt(EmbeddingsHV[i].Len());
+  if (OutWalks) {
+    for (int64 i = 0; i < WalksVV.GetXDim(); i++) { 
+      for (int64 j = 0; j < WalksVV.GetYDim(); j++) {
+        FOut.PutInt(WalksVV(i, j));
+        FOut.PutCh(' ');
+      }
       FOut.PutLn();
-      First = 0;
     }
-    FOut.PutInt(EmbeddingsHV.GetKey(i));
-    for (int64 j = 0; j < EmbeddingsHV[i].Len(); j++) {
-      FOut.PutCh(' ');
-      FOut.PutFlt(EmbeddingsHV[i][j]);
+  } else {
+    bool First = 1;
+    for (int i = EmbeddingsHV.FFirstKeyId(); EmbeddingsHV.FNextKeyId(i);) {
+      if (First) {
+        FOut.PutInt(EmbeddingsHV.Len());
+        FOut.PutCh(' ');
+        FOut.PutInt(EmbeddingsHV[i].Len());
+        FOut.PutLn();
+        First = 0;
+      }
+      FOut.PutInt(EmbeddingsHV.GetKey(i));
+      for (int64 j = 0; j < EmbeddingsHV[i].Len(); j++) {
+        FOut.PutCh(' ');
+        FOut.PutFlt(EmbeddingsHV[i][j]);
+      }
+      FOut.PutLn();
     }
-    FOut.PutLn();
   }
 }
 
 int main(int argc, char* argv[]) {
-  TStr InFile,OutFile,OutWalkFile;
+  TStr InFile, OutFile;
   int Dimensions, WalkLen, NumWalks, WinSize, Iter;
   double ParamP, ParamQ;
-  bool Directed, Weighted, Verbose;
-  ParseArgs(argc, argv, InFile, OutFile, OutWalkFile, Dimensions, WalkLen, NumWalks, WinSize,
+  bool Directed, Weighted, Verbose, OutWalks;
+  ParseArgs(argc, argv, InFile, OutFile, OutWalks, Dimensions, WalkLen, NumWalks, WinSize,
    Iter, Verbose, ParamP, ParamQ, Directed, Weighted);
   PWNet InNet = PWNet::New();
   TIntFltVH EmbeddingsHV;
+  TVVec<TInt, int64> WalksVV;
   ReadGraph(InFile, Directed, Weighted, Verbose, InNet);
   node2vec(InNet, ParamP, ParamQ, Dimensions, WalkLen, NumWalks, WinSize, Iter, 
-   Verbose, EmbeddingsHV, OutWalkFile);
-  WriteOutput(OutFile, EmbeddingsHV);
+   Verbose, EmbeddingsHV, OutWalks, WalksVV);
+  WriteOutput(OutFile, EmbeddingsHV, WalksVV, OutWalks);
   return 0;
 }
