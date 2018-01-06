@@ -6,7 +6,7 @@
 #include <omp.h>
 #endif
 
-void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile,
+void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile, // TStr& OutWalkFile,
  int& Dimensions, int& WalkLen, int& NumWalks, int& WinSize, int& Iter,
  bool& Verbose, double& ParamP, double& ParamQ, bool& Directed, bool& Weighted) {
   Env = TEnv(argc, argv, TNotify::StdNotify);
@@ -15,6 +15,8 @@ void ParseArgs(int& argc, char* argv[], TStr& InFile, TStr& OutFile,
    "Input graph path");
   OutFile = Env.GetIfArgPrefixStr("-o:", "emb/karate.emb",
    "Output graph path");
+  // OutWalkFile = Env.GetIfArgPrefixStr("-ow:", "emb/karate.walk",
+  //  "Output walks path");
   Dimensions = Env.GetIfArgPrefixInt("-d:", 128,
    "Number of dimensions. Default is 128");
   WalkLen = Env.GetIfArgPrefixInt("-l:", 80,
@@ -86,6 +88,7 @@ void WriteOutput(TStr& OutFile, TIntFltVH& EmbeddingsHV) {
 }
 
 int main(int argc, char* argv[]) {
+  printf("%d\t%d", sizeof(TInt), sizeof(TFlt));
   TStr InFile,OutFile;
   int Dimensions, WalkLen, NumWalks, WinSize, Iter;
   double ParamP, ParamQ;

@@ -87,7 +87,9 @@ void PreprocessTransitionProbs(PWNet& InNet, double& ParamP, double& ParamQ, boo
   for (TWNet::TNodeI NI = InNet->BegNI(); NI < InNet->EndNI(); NI++) {
     InNet->SetNDat(NI.GetId(),TIntIntVFltVPrH());
   }
+  printf("PreprocessTransitionProbs 1\n");
   for (TWNet::TNodeI NI = InNet->BegNI(); NI < InNet->EndNI(); NI++) {
+    printf("%d\n", NI.GetId());
     for (int64 i = 0; i < NI.GetOutDeg(); i++) {                    //allocating space in advance to avoid issues with multithreading
       TWNet::TNodeI CurrI = InNet->GetNI(NI.GetNbrNId(i));
       CurrI.GetDat().AddDat(NI.GetId(),TPair<TIntV,TFltV>(TIntV(CurrI.GetOutDeg()),TFltV(CurrI.GetOutDeg())));
@@ -106,13 +108,55 @@ void PreprocessTransitionProbs(PWNet& InNet, double& ParamP, double& ParamQ, boo
 }
 
 int64 PredictMemoryRequirements(PWNet& InNet) {
-  int64 MemNeeded = 0;
+  int count_node_out_deg = 0;
   for (TWNet::TNodeI NI = InNet->BegNI(); NI < InNet->EndNI(); NI++) {
-    for (int64 i = 0; i < NI.GetOutDeg(); i++) {
-      TWNet::TNodeI CurrI = InNet->GetNI(NI.GetNbrNId(i));
-      MemNeeded += CurrI.GetOutDeg()*(sizeof(TInt) + sizeof(TFlt));
+    if (NI.GetOutDeg() >= 500) {
+      count_node_out_deg += 1;
     }
   }
+  printf("Num nodes with OutDeg >= 500: %d\n", count_node_out_deg);
+
+  // FILE *fout;
+  // fout = fopen("emb/edges.tmp", "w");
+  
+
+  long long int MemNeeded = 0;
+  printf("BegNI.GetId, EndNI.GetId: %d\t%d\n", InNet->BegNI().GetId(), InNet->EndNI().GetId());
+  int count_node = 0;
+  int count_edge = 0;
+  int max_out_deg = 0;
+  int min_out_deg = 1000000000;
+  int64 sum_out_deg = 0;
+  int64 count_200k = 0;
+  printf("sizeof(TInt) + sizeof(TFlt) = %d", sizeof(TInt) + sizeof(TFlt));
+  for (TWNet::TNodeI NI = InNet->BegNI(); NI < InNet->EndNI(); NI++) {
+    count_node += 1;
+    for (int64 i = 0; i < NI.GetOutDeg(); i++) {
+      count_edge += 1;
+      TWNet::TNodeI CurrI = InNet->GetNI(NI.GetNbrNId(i));
+      if (max_out_deg < CurrI.GetOutDeg()) {
+        max_out_deg = CurrI.GetOutDeg();
+      }
+      if (min_out_deg > CurrI.GetOutDeg()) {
+        min_out_deg = CurrI.GetOutDeg();
+      }
+      sum_out_deg += int64(CurrI.GetOutDeg());
+      MemNeeded += (int64(CurrI.GetOutDeg()))*(int64(sizeof(TInt) + sizeof(TFlt)));
+      int64 tmp = (int64(CurrI.GetOutDeg()))*(int64(sizeof(TInt) + sizeof(TFlt)));
+      // fprintf(fout, "%lld\t%lld\n", int64(CurrI.GetOutDeg()), tmp);
+      if (tmp > 200000) {
+        count_200k += 1;
+        printf("tmp = %lld\n", tmp);
+      }
+    }
+  }
+  // fclose(fout);
+
+  printf("min_out_deg= %d\n", min_out_deg);
+  printf("max_out_deg= %d\n", max_out_deg);
+  printf("sum_out_deg= %lld\n", sum_out_deg);
+  printf("count_200k = %lld\n", count_200k);
+  printf("count_node, count_edge = %d\t%d", count_node, count_edge);
   return MemNeeded;
 }
 

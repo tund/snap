@@ -4,6 +4,8 @@
 void node2vec(PWNet& InNet, double& ParamP, double& ParamQ, int& Dimensions,
  int& WalkLen, int& NumWalks, int& WinSize, int& Iter, bool& Verbose,
  TIntFltVH& EmbeddingsHV) {
+  printf("Memory requirement: %lld\n", PredictMemoryRequirements(InNet));
+  exit(0);
   //Preprocess transition probabilities
   PreprocessTransitionProbs(InNet, ParamP, ParamQ, Verbose);
   TIntV NIdsV;
@@ -34,6 +36,22 @@ void node2vec(PWNet& InNet, double& ParamP, double& ParamQ, int& Dimensions,
     printf("\n");
     fflush(stdout);
   }
+
+  if (Verbose) {
+    printf("Writing walks to file...\n");
+    fflush(stdout);
+  }
+
+  FILE *fout;
+  fout = fopen("emb/test.walks", "w");
+  for (int64 i = 0; i < WalksVV.GetXDim(); i++) { 
+    for (int64 j = 0; j < WalksVV.GetYDim(); j++) { 
+      fprintf(fout, "%d ", WalksVV(i, j));
+    }
+    fprintf(fout, "\n");
+  }
+  fclose(fout);
+
   //Learning embeddings
   LearnEmbeddings(WalksVV, Dimensions, WinSize, Iter, Verbose, EmbeddingsHV);
 }
