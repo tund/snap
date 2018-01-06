@@ -3,7 +3,7 @@
 
 void node2vec(PWNet& InNet, double& ParamP, double& ParamQ, int& Dimensions,
  int& WalkLen, int& NumWalks, int& WinSize, int& Iter, bool& Verbose,
- TIntFltVH& EmbeddingsHV) {
+ TIntFltVH& EmbeddingsHV, TStr& OutWalkFile) {
   //Preprocess transition probabilities
   PreprocessTransitionProbs(InNet, ParamP, ParamQ, Verbose);
   TIntV NIdsV;
@@ -34,13 +34,34 @@ void node2vec(PWNet& InNet, double& ParamP, double& ParamQ, int& Dimensions,
     printf("\n");
     fflush(stdout);
   }
+
+  //Writing walks
+  if (Verbose) {
+    printf("Writing walks to file...");
+    fflush(stdout);
+  }
+  TFOut FOut(OutWalkFile);
+  for (int64 i = 0; i < WalksVV.GetXDim(); i++) { 
+    for (int64 j = 0; j < WalksVV.GetYDim(); j++) {
+      FOut.PutInt(WalksVV(i, j));
+      FOut.PutCh(' ');
+    }
+    FOut.PutLn();
+  }
+  // for (int i = 0; i < WalksVV.GetXDim(); i++) { 
+  //   for (int64 j = 0; j < WalksVV.GetYDim(); j++) { 
+  //     printf("%d ",WalksVV(i, j)); 
+  //   } 
+  //   printf("\n");
+  // }
+
   //Learning embeddings
   LearnEmbeddings(WalksVV, Dimensions, WinSize, Iter, Verbose, EmbeddingsHV);
 }
 
 void node2vec(PNGraph& InNet, double& ParamP, double& ParamQ, int& Dimensions,
  int& WalkLen, int& NumWalks, int& WinSize, int& Iter, bool& Verbose,
- TIntFltVH& EmbeddingsHV) {
+ TIntFltVH& EmbeddingsHV, TStr& OutWalkFile) {
   PWNet NewNet = PWNet::New();
   for (TNGraph::TEdgeI EI = InNet->BegEI(); EI < InNet->EndEI(); EI++) {
     if (!NewNet->IsNode(EI.GetSrcNId())) { NewNet->AddNode(EI.GetSrcNId()); }
@@ -48,12 +69,12 @@ void node2vec(PNGraph& InNet, double& ParamP, double& ParamQ, int& Dimensions,
     NewNet->AddEdge(EI.GetSrcNId(), EI.GetDstNId(), 1.0);
   }
   node2vec(NewNet, ParamP, ParamQ, Dimensions, WalkLen, NumWalks, WinSize, Iter, 
-   Verbose, EmbeddingsHV);
+   Verbose, EmbeddingsHV, OutWalkFile);
 }
 
 void node2vec(PNEANet& InNet, double& ParamP, double& ParamQ,
  int& Dimensions, int& WalkLen, int& NumWalks, int& WinSize, int& Iter, bool& Verbose,
- TIntFltVH& EmbeddingsHV) {
+ TIntFltVH& EmbeddingsHV, TStr& OutWalkFile) {
   PWNet NewNet = PWNet::New();
   for (TNEANet::TEdgeI EI = InNet->BegEI(); EI < InNet->EndEI(); EI++) {
     if (!NewNet->IsNode(EI.GetSrcNId())) { NewNet->AddNode(EI.GetSrcNId()); }
@@ -61,5 +82,5 @@ void node2vec(PNEANet& InNet, double& ParamP, double& ParamQ,
     NewNet->AddEdge(EI.GetSrcNId(), EI.GetDstNId(), InNet->GetFltAttrDatE(EI,"weight"));
   }
   node2vec(NewNet, ParamP, ParamQ, Dimensions, WalkLen, NumWalks, WinSize, Iter, 
-   Verbose, EmbeddingsHV);
+   Verbose, EmbeddingsHV, OutWalkFile);
 }
