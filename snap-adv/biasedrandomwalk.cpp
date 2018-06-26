@@ -127,6 +127,9 @@ void SimulateWalk(PWNet& InNet, int64 StartNId, int& WalkLen, TRnd& Rnd, TIntV& 
     int64 Src = WalkV.LastLast();
     if (InNet->GetNI(Dst).GetOutDeg() == 0) { return; }
     int64 Next = AliasDrawInt(InNet->GetNDat(Dst).GetDat(Src),Rnd);
-    WalkV.Add(InNet->GetNI(Dst).GetNbrNId(Next));
+    int64 NextNId = InNet->GetNI(Dst).GetNbrNId(Next);
+    if (NextNId != StartNId) {
+      WalkV.Add();
+    }
   }
 }

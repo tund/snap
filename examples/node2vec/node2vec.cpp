@@ -70,11 +70,12 @@ void WriteOutput(TStr& OutFile, TIntFltVH& EmbeddingsHV, TVVec<TInt, int64>& Wal
   TFOut FOut(OutFile);
   if (OutWalks) {
     for (int64 i = 0; i < WalksVV.GetXDim(); i++) { 
-      for (int64 j = 0; j < WalksVV.GetYDim(); j++) {
+      for (int64 j = 1; j < WalksVV.GetYDim(); j++) {
+        FOut.PutInt(WalksVV(i, 0));
+        FOut.PutCh(',');
         FOut.PutInt(WalksVV(i, j));
-        FOut.PutCh(' ');
+        FOut.PutLn();
       }
-      FOut.PutLn();
     }
   } else {
     bool First = 1;

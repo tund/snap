@@ -30,3 +30,5 @@ Graph is weighted. (-w)
 
 Usage:
 ./node2vec -i:graph/karate.edgelist -o:emb/karate.emb -l:3 -d:24 -p:0.3 -dr -v
+
+./node2vec -i:graph/karate.edgelist -o:emb/karate.walks -ow -l:5 -r:50 -dr -v
